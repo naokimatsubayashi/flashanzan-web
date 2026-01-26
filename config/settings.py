@@ -17,9 +17,6 @@ import os
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
-
 # SECURITY WARNING: keep the secret key used in production secret!
 # Renderでは環境変数 SECRET_KEY を使う（ローカルはデフォルト値でも動く）
 SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-change-me")
@@ -31,8 +28,17 @@ DEBUG = os.environ.get("DEBUG", "True").lower() == "true"
 # Renderのドメインを許可する（環境変数 ALLOWED_HOSTS をカンマ区切りで渡す）
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get("ALLOWED_HOSTS", "").split(",") if h.strip()]
 if not ALLOWED_HOSTS:
-    # ローカル開発用
-    ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
+    # ローカル開発 + Renderのサブドメインを許可
+    ALLOWED_HOSTS = ["127.0.0.1", "localhost", ".onrender.com"]
+
+# Render(リバースプロキシ)配下でHTTPS判定を正しくする
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# CSRF対策（POSTするアプリなので、RenderのURLを許可）
+# ※ RenderのURLが変わる可能性があるなら環境変数で管理してもOK
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()]
+if not CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS = ["https://*.onrender.com"]
 
 
 # Application definition
