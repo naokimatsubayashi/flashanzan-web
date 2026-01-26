@@ -1,0 +1,283 @@
+{% load static %}
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>フラッシュ暗算</title>
+
+  <!-- 既存CSS（abacus2の@font-faceや .flash-number をここで定義している想定） -->
+  <link rel="stylesheet" href="{% static 'core/css/flash.css' %}">
+
+  <style>
+    /* ここは保険（flash.cssが効かない/未定義でも画面が崩れないように） */
+    body { margin:0; background:#000; color:#eaeaea; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    .status { position: fixed; top: 8px; left: 10px; font-size: 18px; opacity: .9; z-index: 20; }
+    .abort { position: fixed; top: 8px; right: 10px; z-index: 20; }
+    .abort a{
+      display:inline-block; padding:8px 12px; border-radius: 10px;
+      background:#1a1a1a; border:1px solid #333; color:#fff; text-decoration:none;
+      font-size:14px;
+    }
+    .wrap { min-height: 100vh; display:flex; flex-direction:column; align-items:center; }
+    .header { padding-top: 18px; }
+
+    /* ★ロゴは常に200px */
+    .header img { max-width: 200px; width: 100%; height: auto; display:block; }
+
+    .stage { flex: 1; width:100%; display:flex; align-items:center; justify-content:center; }
+
+    /* 数字：中央・大きめ・ライトグリーン（fontはflash.css側の .flash-number に任せる） */
+    .flash-number{
+      font-size: 180px;
+      color: #9dff9d;
+      text-align:center;
+      line-height: 1;
+      text-shadow: 0 0 18px rgba(157,255,157,.25);
+      user-select:none;
+    }
+
+    /* 電卓 */
+    .pad-wrap{
+      width: 100%;
+      display:none; /* 出題終了後に表示 */
+      justify-content:center;
+      padding: 0 12px 18px;
+    }
+    .pad{
+      width: min(560px, 95vw);
+      background: rgba(20,20,20,.85);
+      border: 1px solid #2a2a2a;
+      border-radius: 18px;
+      padding: 14px;
+      box-shadow: 0 10px 26px rgba(0,0,0,.45);
+    }
+    .pad-title{
+      background:#000;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      font-weight: 700;
+      text-align:center;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .btn{
+      border: none;
+      border-radius: 10px;
+      padding: 16px 0;
+      font-size: 22px;
+      font-weight: 800;
+      color:#fff;
+      cursor:pointer;
+    }
+    .n{ background:#2f9fd0; }
+    .g{ background:#7bd07b; color:#053; }
+    .decide{
+      width:100%;
+      margin-top: 12px;
+      padding: 18px 0;
+      border-radius: 12px;
+      border:none;
+      background:#f2a53a;
+      font-size: 26px;
+      font-weight: 900;
+      color:#fff;
+      cursor:pointer;
+    }
+    .display{
+      margin: 10px 0 2px;
+      text-align:center;
+      font-size: 18px;
+      opacity: .85;
+    }
+    .answer{
+      text-align:center;
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: .5px;
+      padding: 4px 0 10px;
+      min-height: 44px;
+      color:#eaeaea;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- 左上：級/進捗 -->
+  <div class="status">{{ level }} / {{ q_index }} / {{ total }}</div>
+
+  <!-- 右上：中断（セッションも消したいので abort を使う） -->
+  <div class="abort">
+    <a href="{% url 'abort' %}">中断してトップへ</a>
+  </div>
+
+  <div class="wrap">
+    <!-- ロゴ -->
+    <div class="header">
+      <img src="{% static 'core/images/logo.png' %}" alt="そろばん教室ロゴ">
+    </div>
+
+    <!-- 出題数字 -->
+    <div class="stage">
+      <div id="flashNumber" class="flash-number"></div>
+    </div>
+
+    <!-- 電卓入力（出題後に表示） -->
+    <div id="padWrap" class="pad-wrap">
+      <div class="pad">
+        <div class="pad-title">回答を入力してください</div>
+
+        <div class="display">入力中</div>
+        <div id="answerView" class="answer"></div>
+
+        <div class="grid">
+          <button class="btn n" type="button" data-key="7">7</button>
+          <button class="btn n" type="button" data-key="8">8</button>
+          <button class="btn n" type="button" data-key="9">9</button>
+
+          <button class="btn n" type="button" data-key="4">4</button>
+          <button class="btn n" type="button" data-key="5">5</button>
+          <button class="btn n" type="button" data-key="6">6</button>
+
+          <button class="btn n" type="button" data-key="1">1</button>
+          <button class="btn n" type="button" data-key="2">2</button>
+          <button class="btn n" type="button" data-key="3">3</button>
+
+          <!-- ×：1文字消し -->
+          <button class="btn g" type="button" data-action="back">×</button>
+          <button class="btn n" type="button" data-key="0">0</button>
+          <!-- -：符号切替 -->
+          <button class="btn g" type="button" data-action="sign">-</button>
+        </div>
+
+        <form id="answerForm" method="post" action="{% url 'feedback' level=level %}">
+          {% csrf_token %}
+          <input type="hidden" name="answer" id="answerInput">
+          <button class="decide" type="submit">決定</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- nums を安全にJSへ渡す -->
+  {{ nums|json_script:"nums-data" }}
+
+  <script>
+    // ====== 出題設定 ======
+    const nums = JSON.parse(document.getElementById("nums-data").textContent); // [n,n,n...]
+    const totalMs = Math.round(parseFloat("{{ seconds }}") * 1000);            // 例: 4.5秒 → 4500
+    const perMs = Math.max(120, Math.floor(totalMs / Math.max(nums.length, 1)));
+
+    // ====== 音 ======
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    const ctx = new AudioCtx();
+
+    // ブラウザの制限対策：最初のクリック/タップで音を有効化
+    const unlock = () => { if (ctx.state !== "running") ctx.resume(); };
+    window.addEventListener("pointerdown", unlock, { once: true });
+
+    function beep(freq=520, ms=60, type="sine", gain=0.12){
+      try{
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = type;
+        o.frequency.value = freq;
+        g.gain.value = gain;
+        o.connect(g); g.connect(ctx.destination);
+        o.start();
+        setTimeout(()=>{ o.stop(); }, ms);
+      }catch(e){}
+    }
+
+    // ★開始合図「ピー、ピー」（出題前）
+    // 重要：鳴り終わりまでの時間(ms)を返す
+    function startBeep(){
+      const toneMs = 350; // 1回のピーの長さ（調整可）
+      const gapMs  = 550; // 2回目までの間隔（調整可）
+
+      beep(1400, toneMs, "sine", 0.18);
+      setTimeout(()=>beep(1400, toneMs, "sine", 0.18), gapMs);
+
+      // 2回目は gapMs 後に鳴り始めて toneMs で終わる
+      return gapMs + toneMs;
+    }
+
+    // ====== 表示制御 ======
+    const flashEl = document.getElementById("flashNumber");
+    const padWrap = document.getElementById("padWrap");
+
+    function showPad(){
+      flashEl.textContent = "";
+      padWrap.style.display = "flex";
+    }
+
+    function runFlash(){
+      let i = 0;
+      function step(){
+        if (i >= nums.length){
+          showPad();
+          return;
+        }
+        flashEl.textContent = String(nums[i]);
+        beep(520, 55, "sine", 0.12); // 「プッ」
+        i++;
+        setTimeout(step, perMs);
+      }
+      step();
+    }
+
+    // ★ページ表示直後：開始音 → 鳴り終わってから出題開始（被り防止）
+    try { ctx.resume(); } catch(e) {}
+    const waitMs = startBeep();
+    setTimeout(() => {
+      runFlash();
+    }, waitMs + 120); // +120 は余韻/ズレ防止の保険
+
+    // ====== 電卓入力 ======
+    let buf = "";
+    const answerView = document.getElementById("answerView");
+    const answerInput = document.getElementById("answerInput");
+
+    function render(){
+      answerView.textContent = buf === "" ? " " : buf;
+      answerInput.value = buf === "" ? "0" : buf;
+    }
+
+    function addDigit(d){
+      if (buf === "0") buf = "";
+      if (buf === "-0") buf = "-";
+      buf += d;
+      render();
+    }
+
+    function backspace(){
+      buf = buf.slice(0, -1);
+      render();
+    }
+
+    function toggleSign(){
+      if (buf.startsWith("-")) buf = buf.slice(1);
+      else buf = "-" + (buf === "" ? "0" : buf);
+      render();
+    }
+
+    document.querySelectorAll(".btn").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        unlock();
+        const k = btn.getAttribute("data-key");
+        const act = btn.getAttribute("data-action");
+        if (k !== null) addDigit(k);
+        else if (act === "back") backspace();
+        else if (act === "sign") toggleSign();
+      });
+    });
+
+    // 初期表示
+    render();
+  </script>
+</body>
+</html>

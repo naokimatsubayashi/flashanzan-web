@@ -1,0 +1,29 @@
+{% load static %}
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>解答</title>
+
+  <link rel="stylesheet" href="{% static 'core/css/flash.css' %}">
+</head>
+<body>
+
+  <div class="abort">
+    <a href="{% url 'home' %}">中断してトップへ</a>
+  </div>
+
+  <div class="wrap">
+
+    <div class="header">
+      <img src="{% static 'core/images/logo.png' %}" alt="そろばん教室ロゴ">
+    </div>
+
+    <!-- ここから下に、あなたの“電卓UI”のHTMLがあるはずなので、そのまま残してください -->
+    <!-- （例：回答を入力してください / 7 8 9 のボタン / 決定ボタン 等） -->
+
+  </div>
+
+</body>
+</html>

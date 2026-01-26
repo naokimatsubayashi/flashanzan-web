@@ -1,0 +1,86 @@
+/* core/static/core/css/flash.css */
+
+/* ====== abacus2 フォント登録 ====== */
+@font-face {
+  font-family: "Abacus2";
+  src: url("../fonts/abacus2.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+body {
+  margin: 0;
+  background: #000;
+  color: #eaeaea;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* 全画面共通の中央寄せ枠 */
+.wrap {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 上部のロゴ領域（固定でもOK） */
+.header {
+  padding: 14px 0 6px;
+  display: flex;
+  justify-content: center;
+}
+
+.header img {
+  width: min(420px, 70vw);
+  height: auto;
+}
+
+/* ====== “数字だけ” abacus2 を適用するクラス ====== */
+.flash-number {
+  font-family: "Abacus2", system-ui, sans-serif;
+  color: #9dff9d;
+  text-align: center;
+  font-size: clamp(140px, 18vw, 280px);
+  font-weight: 400;
+  line-height: 1;
+  text-shadow: 0 0 22px rgba(157, 255, 157, 0.25);
+}
+
+/* 数字を画面中央に大きく出す領域 */
+.stage {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 0 12px;
+}
+
+/* 画面左上に級/進捗 */
+.status {
+  position: fixed;
+  top: 10px;
+  left: 12px;
+  font-size: 16px;
+  opacity: 0.9;
+}
+
+/* 中断ボタン（右上固定） */
+.abort {
+  position: fixed;
+  top: 10px;
+  right: 12px;
+  z-index: 9999;
+}
+
+.abort a {
+  display: inline-block;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #222;
+  color: #fff;
+  text-decoration: none;
+  border: 1px solid #3a3a3a;
+  font-size: 14px;
+}
+
+.abort a:hover {
+  background: #2c2c2c;
+}

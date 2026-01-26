@@ -1,0 +1,125 @@
+{% load static %}
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>結果</title>
+
+  <style>
+    body{
+      margin:0;
+      background:#fff;
+      color:#111;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    .wrap{
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 28px 16px 48px;
+      text-align:center;
+    }
+    .header img{
+      max-width: 200px; /* ★ロゴ 200px */
+      width: 100%;
+      height: auto;
+    }
+    .level{ margin-top: 12px; font-size: 18px; opacity:.9; }
+    .big{
+      font-size: 92px;
+      font-weight: 900;
+      margin: 12px 0 8px;
+      letter-spacing: .02em;
+    }
+    .pass{ color:#0a7a0a; }
+    .fail{ color:#c81515; }
+
+    .score{
+      font-size: 22px;
+      margin: 10px 0 18px;
+    }
+    .btn{
+      display:inline-block;
+      margin: 10px 0 22px;
+      padding: 12px 18px;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+      background: #f5f5f5;
+      color:#111;
+      text-decoration:none;
+      font-weight:700;
+    }
+
+    table{
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+      background: #fff;
+      border: 1px solid #e6e6e6;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    thead th{
+      text-align:left;
+      padding: 12px 12px;
+      background: #f3f3f3;
+      font-size: 14px;
+      border-bottom: 1px solid #e6e6e6;
+    }
+    tbody td{
+      padding: 14px 12px;
+      border-bottom: 1px solid #efefef;
+      font-size: 18px;
+    }
+    tbody tr:last-child td{ border-bottom:none; }
+
+    .judge-ok{ color:#0a7a0a; font-weight:900; }
+    .judge-ng{ color:#c81515; font-weight:900; }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="header">
+      <img src="{% static 'core/images/logo.png' %}" alt="そろばん教室ロゴ">
+    </div>
+
+    <div class="level">{{ level }}</div>
+
+    <div class="big {% if passed %}pass{% else %}fail{% endif %}">
+      {% if passed %}合格{% else %}不合格{% endif %}
+    </div>
+
+    <div class="score">正解：{{ correct_count }} / {{ total }}（7以上で合格）</div>
+
+    <a class="btn" href="{% url 'home' %}">トップに戻る</a>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width:70px;">No</th>
+          <th style="width:90px;">判定</th>
+          <th>あなたの解答</th>
+          <th>正解</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for h in history %}
+        <tr>
+          <td>{{ h.q_index }}</td>
+          <td>
+            {% if h.is_correct %}
+              <span class="judge-ok">●</span>
+            {% else %}
+              <span class="judge-ng">×</span>
+            {% endif %}
+          </td>
+          <td>{{ h.user_answer }}</td>
+          <td>{{ h.correct_answer }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

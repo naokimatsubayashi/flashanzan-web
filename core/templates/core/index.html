@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>フラッシュ暗算 - トップ</title>
+  <style>
+    body { margin:0; background:#0b0b0b; color:#eaeaea; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    .wrap { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+    h1 { margin: 0 0 12px; font-size: 24px; }
+    .grid { display:grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .btn {
+      background:#161616; color:#eaeaea; border:1px solid #2a2a2a;
+      border-radius: 12px; padding: 14px 12px; cursor:pointer; width:100%;
+      text-align:left;
+    }
+    .btn:hover { border-color:#4a4a4a; }
+    .lv { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    .meta { font-size: 13px; opacity:.9; line-height: 1.4; }
+    @media (max-width: 700px) { .grid { grid-template-columns: repeat(1, 1fr); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>フラッシュ暗算</h1>
+    <div class="grid">
+      {% for lv in levels %}
+        <form method="get" action="{% url 'start' lv.key %}">
+          <button class="btn" type="submit">
+            <div class="lv">{{ lv.key }}</div>
+            <div class="meta">桁数：{{ lv.keta }} ／ 口数：{{ lv.kuchi }} ／ 秒数：{{ lv.sec }}</div>
+          </button>
+        </form>
+      {% endfor %}
+    </div>
+  </div>
+</body>
+</html>

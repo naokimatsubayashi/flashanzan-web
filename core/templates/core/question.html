@@ -1,0 +1,41 @@
+{% load static %}
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>フラッシュ暗算（確認）</title>
+
+  <!-- CSS（キャッシュ対策） -->
+  <link rel="stylesheet" href="{% static 'core/css/flash.css' %}?v=debug">
+</head>
+
+<body>
+
+  <!-- ★ 確認用：これが出なければこのHTMLは使われていません -->
+  <div style="
+    position:fixed;
+    top:0;
+    left:0;
+    background:red;
+    color:white;
+    z-index:9999;
+    padding:6px 10px;
+    font-size:16px;
+    font-weight:bold;
+  ">
+    TEMPLATE: question.html
+  </div>
+
+  <!-- ロゴ -->
+  <div style="text-align:center; padding-top:40px;">
+    <img src="{% static 'core/images/ロゴ.png' %}" style="max-width:260px;">
+  </div>
+
+  <!-- 出題数字 -->
+  <div class="flash-number">
+    {{ number }}
+  </div>
+
+</body>
+</html>

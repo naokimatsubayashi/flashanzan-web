@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>判定</title>
+  <style>
+    body { margin:0; background:#000; color:#eaeaea; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    .wrap { max-width: 900px; margin: 0 auto; padding: 32px 16px; text-align:center; }
+    .lv { opacity:.9; font-size: 18px; margin-bottom: 8px; }
+    .big { font-size: 64px; font-weight: 900; margin: 10px 0 16px; }
+    .box {
+      display:inline-block;
+      background:#121212; border:1px solid #2a2a2a; border-radius: 16px;
+      padding: 22px 26px;
+      min-width: 360px;
+    }
+    .line { font-size: 22px; margin: 8px 0; }
+    .mark { font-size: 70px; font-weight: 900; margin: 10px 0 6px; }
+    .ok { color:#9dff9d; }
+    .ng { color:#ff7a7a; }
+    .hint { opacity:.8; margin-top: 14px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="lv">{{ level }} ／ {{ q_index }} / {{ total }}</div>
+
+    <div class="box">
+      <div class="mark {% if is_correct %}ok{% else %}ng{% endif %}">
+        {% if is_correct %}●{% else %}×{% endif %}
+      </div>
+
+      <div class="line">あなたの解答：<b>{{ user_answer }}</b></div>
+      <div class="line">正解：<b>{{ correct_answer }}</b></div>
+
+      <div class="hint">次の問題へ進みます…</div>
+    </div>
+  </div>
+
+  <script>
+    // ★効果音：正解=ピンポン / 不正解=ブブー（WebAudioで生成）
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    const ctx = new AudioCtx();
+
+    function beep(freq, ms, type="sine", gain=0.15){
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = type;
+      o.frequency.value = freq;
+      g.gain.value = gain;
+      o.connect(g); g.connect(ctx.destination);
+      o.start();
+      setTimeout(()=>{ o.stop(); }, ms);
+    }
+
+    function pinpon(){
+      beep(880, 120, "sine", 0.18);
+      setTimeout(()=>beep(1320, 140, "sine", 0.18), 140);
+    }
+    function bubuu(){
+      beep(180, 260, "square", 0.12);
+      setTimeout(()=>beep(140, 260, "square", 0.12), 260);
+    }
+
+    // 自動で鳴らす（ブラウザによっては最初の操作が必要ですが、通常は直前にボタン押しているのでOK）
+    const ok = {{ "true" if is_correct else "false" }};
+    if (ok) pinpon(); else bubuu();
+
+    // 0.9秒後に次の問題へ
+    setTimeout(()=>{ window.location.href = "/quiz/"; }, 900);
+  </script>
+</body>
+</html>
