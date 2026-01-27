@@ -103,6 +103,49 @@
       min-height: 44px;
       color:#eaeaea;
     }
+
+    /* ===== iPhone対策：開始オーバーレイ（タップで音を解放） ===== */
+    .start-overlay{
+      position: fixed;
+      inset: 0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background: rgba(0,0,0,.55);
+      z-index: 9999;
+      backdrop-filter: blur(2px);
+    }
+    .start-card{
+      width: min(420px, 92vw);
+      background: rgba(18,18,18,.92);
+      border: 1px solid #2a2a2a;
+      border-radius: 16px;
+      padding: 18px 16px;
+      text-align:center;
+      box-shadow: 0 12px 30px rgba(0,0,0,.55);
+    }
+    .start-title{
+      font-size: 18px;
+      font-weight: 900;
+      margin-bottom: 10px;
+    }
+    .start-desc{
+      font-size: 14px;
+      opacity: .85;
+      margin-bottom: 14px;
+      line-height: 1.6;
+    }
+    .start-btn{
+      width: 100%;
+      border:none;
+      border-radius: 12px;
+      padding: 14px 0;
+      font-size: 18px;
+      font-weight: 900;
+      background:#2f9fd0;
+      color:#fff;
+      cursor:pointer;
+    }
   </style>
 </head>
 
@@ -113,6 +156,18 @@
   <!-- 右上：中断（セッションも消したいので abort を使う） -->
   <div class="abort">
     <a href="{% url 'abort' %}">中断してトップへ</a>
+  </div>
+
+  <!-- ★iPhone/Safari対策：必ずユーザー操作（タップ）から音→出題開始にする -->
+  <div id="startOverlay" class="start-overlay">
+    <div class="start-card">
+      <div class="start-title">準備OK！</div>
+      <div class="start-desc">
+        音を有効にするため、<b>「タップして開始」</b>を押してください。<br>
+        （iPhoneでは最初のタップが必要です）
+      </div>
+      <button id="startBtn" class="start-btn" type="button">タップして開始</button>
+    </div>
   </div>
 
   <div class="wrap">
@@ -172,15 +227,34 @@
     const totalMs = Math.round(parseFloat("{{ seconds }}") * 1000);            // 例: 4.5秒 → 4500
     const perMs = Math.max(120, Math.floor(totalMs / Math.max(nums.length, 1)));
 
-    // ====== 音 ======
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    const ctx = new AudioCtx();
+    // ====== iPhone対策：AudioContextは「タップ後に生成」する ======
+    let ctx = null;
 
-    // ブラウザの制限対策：最初のクリック/タップで音を有効化
-    const unlock = () => { if (ctx.state !== "running") ctx.resume(); };
-    window.addEventListener("pointerdown", unlock, { once: true });
+    function createAudioContext(){
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      ctx = new AudioCtx();
+      return ctx;
+    }
+
+    // 無音を一瞬鳴らしてiOSのオーディオを解放する（超重要）
+    async function unlockAudio(){
+      if (!ctx) createAudioContext();
+      try{
+        if (ctx.state !== "running") await ctx.resume();
+      }catch(e){}
+
+      // silent buffer を 1回鳴らす（これが効く端末が多い）
+      try{
+        const buffer = ctx.createBuffer(1, 1, 22050);
+        const src = ctx.createBufferSource();
+        src.buffer = buffer;
+        src.connect(ctx.destination);
+        src.start(0);
+      }catch(e){}
+    }
 
     function beep(freq=520, ms=60, type="sine", gain=0.12){
+      if (!ctx) return; // 念のため
       try{
         const o = ctx.createOscillator();
         const g = ctx.createGain();
@@ -199,8 +273,8 @@
       const toneMs = 350; // 1回のピーの長さ（調整可）
       const gapMs  = 550; // 2回目までの間隔（調整可）
 
-      beep(1400, toneMs, "sine", 0.18);
-      setTimeout(()=>beep(1400, toneMs, "sine", 0.18), gapMs);
+      beep(1400, toneMs, "sine", 0.22);
+      setTimeout(()=>beep(1400, toneMs, "sine", 0.22), gapMs);
 
       // 2回目は gapMs 後に鳴り始めて toneMs で終わる
       return gapMs + toneMs;
@@ -230,12 +304,25 @@
       step();
     }
 
-    // ★ページ表示直後：開始音 → 鳴り終わってから出題開始（被り防止）
-    try { ctx.resume(); } catch(e) {}
-    const waitMs = startBeep();
-    setTimeout(() => {
-      runFlash();
-    }, waitMs + 120); // +120 は余韻/ズレ防止の保険
+    // ====== ★開始ボタンで「音の解放→開始音→鳴り終わり後に出題」 ======
+    const overlay = document.getElementById("startOverlay");
+    const startBtn = document.getElementById("startBtn");
+
+    startBtn.addEventListener("click", async () => {
+      // 1) タップ直後に AudioContext生成＋unlock（iPhone対策）
+      await unlockAudio();
+
+      // 2) オーバーレイを消す
+      overlay.style.display = "none";
+
+      // 3) タップした“直後”に開始音を鳴らす
+      const waitMs = startBeep();
+
+      // 4) 開始音が終わってから出題開始（被り防止）
+      setTimeout(() => {
+        runFlash();
+      }, waitMs + 120); // +120 は余韻/ズレ防止の保険
+    });
 
     // ====== 電卓入力 ======
     let buf = "";
@@ -266,8 +353,10 @@
     }
 
     document.querySelectorAll(".btn").forEach(btn=>{
-      btn.addEventListener("click", ()=>{
-        unlock();
+      btn.addEventListener("click", async ()=>{
+        // 開始ボタンを押さずに電卓に触った場合も、音を解放しておく
+        if (!ctx) await unlockAudio();
+
         const k = btn.getAttribute("data-key");
         const act = btn.getAttribute("data-action");
         if (k !== null) addDigit(k);
