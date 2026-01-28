@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect
-from django.http import HttpResponseBadRequest
+from django.http import HttpResponseBadRequest, JsonResponse
+from django.urls import reverse
 import random
 
 # 段級位データ（桁数=digits / 口数=terms / 秒数=seconds）
@@ -93,20 +94,25 @@ def quiz(request, level):
         "q_index": q_index,
         "total": 10,
         "nums": nums,          # JSで順次表示
-        # ※テンプレ側が {{ number }} を参照している場合でも落ちないよう空を渡す
-        "number": "",
+        "number": "",          # 念のため
     })
 
 
 def feedback(request, level):
     """
-    1問解答後の「●×」画面（音もここで鳴らす）
+    1問解答後の判定
+
+    - 通常POST：従来通り feedback.html を返す
+    - AJAX（fetch）POST：JSONを返す（iPhoneでも同一ページ内で音を鳴らせるように）
     """
     if request.method != "POST":
         return redirect("quiz", level=level)
 
     if level not in LEVEL_MAP:
         return HttpResponseBadRequest("Invalid level")
+
+    # AJAX判定（quiz.html側の fetch がこれを付与）
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
 
     user_answer = request.POST.get("answer", "").strip()
     try:
@@ -133,9 +139,28 @@ def feedback(request, level):
     request.session["history"] = history
 
     # 次へ
-    request.session["q_index"] = q_index + 1
+    next_q_index = q_index + 1
+    request.session["q_index"] = next_q_index
     request.session.modified = True
 
+    # 次URL（10問終わったらresultへ、それ以外はquizへ）
+    if next_q_index > 10:
+        next_url = reverse("result", kwargs={"level": level})
+    else:
+        next_url = reverse("quiz", kwargs={"level": level})
+
+    # ★AJAXならJSONで返す（iPhoneの音対策の本丸）
+    if is_ajax:
+        return JsonResponse({
+            "is_correct": bool(is_correct),
+            "next_url": next_url,
+            "q_index": q_index,
+            "total": 10,
+            "correct_answer": int(correct) if correct is not None else None,
+            "user_answer": user_answer,
+        })
+
+    # ★通常は従来通りのfeedback画面へ
     return render(request, "core/feedback.html", {
         "level": level,
         "q_index": q_index,
@@ -143,6 +168,7 @@ def feedback(request, level):
         "correct_answer": int(correct) if correct is not None else "",
         "user_answer": user_answer,
         "is_correct": is_correct,
+        "next_url": next_url,  # （テンプレで使いたければ）
     })
 
 
@@ -154,7 +180,6 @@ def result(request, level):
     history = request.session.get("history", [])
     passed = correct_count >= 7
 
-    # ★ 追加：テンプレが details を参照しても壊れないように両方渡す
     details = []
     for item in history:
         details.append({
@@ -169,8 +194,8 @@ def result(request, level):
         "correct_count": correct_count,
         "total": 10,
         "passed": passed,
-        "history": history,     # 旧方式
-        "details": details,     # 新方式（一覧表示用）
+        "history": history,
+        "details": details,
     })
 
 
