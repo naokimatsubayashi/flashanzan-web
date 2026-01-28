@@ -2,168 +2,75 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>フラッシュ暗算アプリ</title>
-
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>フラッシュ暗算</title>
   <style>
-    :root{
-      /* 文字サイズを全体的に2倍（比率維持） */
-      --title: 56px;
-      --card-title: 36px;
-      --meta: 24px;
-      --meta-label: 22px;
-      --meta-value: 24px;
-    }
+    body { margin:0; background:#f4f5f7; color:#111; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 18px 14px 28px; }
 
-    body{
-      margin:0;
-      background:#fff;            /* ② 背景を白 */
-      color:#111;
-      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-    }
+    .topbar{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .title{ font-size: 34px; font-weight: 900; margin: 0; }
+    .sub{ margin: 6px 0 0; opacity:.75; }
+    .logo img{ height: 44px; width:auto; display:block; }
 
-    .page{
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 28px 18px 40px;
-    }
+    /* ★ PC: 6列 */
+    .grid { margin-top: 16px; display:grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
 
-    /* 右上ロゴ（今の位置を維持している想定） */
-    .topbar{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:16px;
-      margin-bottom: 18px;
-    }
-    .app-title{
-      font-size: var(--title);    /* ③ 表題 */
-      font-weight: 900;
-      letter-spacing: .02em;
-      margin: 0;
-      line-height: 1.1;
-    }
-
-    .logo img{
-      width: 240px; /* ここは今まで通り。必要なら後で調整可 */
-      height:auto;
-      display:block;
-    }
-
-    .subtitle{
-      margin: 8px 0 20px;
-      font-size: 20px;
-      color:#444;
-    }
-
-    .grid{
-      display:grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 20px;
-      margin-top: 12px;
-    }
-
+    /* ★ ボタンを小さめに */
     .card{
-      text-decoration:none;
-      color: inherit;
-      background:#f6f6f6;
-      border:1px solid #ddd;
-      border-radius: 16px;
-      padding: 18px 20px;
-      box-shadow: 0 8px 18px rgba(0,0,0,.08);
-      transition: transform .06s ease, box-shadow .12s ease;
+      background:#fff;
+      border:1px solid #e2e5ea;
+      border-radius: 14px;
+      padding: 10px 10px;
+      cursor:pointer;
+      width:100%;
+      text-align:left;
+      box-shadow: 0 1px 0 rgba(0,0,0,.03);
     }
-    .card:hover{
-      transform: translateY(-2px);
-      box-shadow: 0 12px 26px rgba(0,0,0,.12);
-    }
+    .card:hover { border-color:#cfd6df; }
 
-    .card h3{
-      margin: 0 0 10px;
-      font-size: var(--card-title);     /* ① 2倍相当 */
-      font-weight: 900;
-      color:#111;
-    }
+    .lv { font-size: 18px; font-weight: 900; margin-bottom: 6px; }
+    .meta { font-size: 12px; line-height: 1.35; color:#333; }
+    .meta b{ color:#1a73e8; }
 
-    .meta{
-      display:grid;
-      grid-template-columns: 1fr;
-      gap: 6px;
-      font-size: var(--meta);
-      line-height: 1.3;
-      color:#111;
-    }
-    .meta .row{
-      display:flex;
-      gap: 10px;
-      align-items:baseline;
-    }
-    .meta .label{
-      font-size: var(--meta-label);
-      color:#333;
-      min-width: 58px;
-      font-weight: 700;
-    }
-    .meta .val{
-      font-size: var(--meta-value);
-      color:#0b57d0;   /* 今まで青っぽかったので踏襲（嫌なら後で変更） */
-      font-weight: 800;
-    }
+    /* レスポンシブ：画面が狭ければ列を落とす */
+    @media (max-width: 1100px){ .grid{ grid-template-columns: repeat(4, 1fr);} }
+    @media (max-width: 720px){ .title{font-size: 26px;} .grid{ grid-template-columns: repeat(2, 1fr);} .logo img{ height: 38px;} }
 
-    /* スマホ：2列→1列 */
-    @media (max-width: 900px){
-      .grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      :root{
-        --title: 44px;
-        --card-title: 30px;
-        --meta: 20px;
-        --meta-label: 18px;
-        --meta-value: 20px;
-      }
-      .logo img{ width: 200px; }
-    }
-    @media (max-width: 560px){
-      .grid{ grid-template-columns: 1fr; }
-      :root{
-        --title: 38px;
-        --card-title: 28px;
-        --meta: 18px;
-        --meta-label: 16px;
-        --meta-value: 18px;
-      }
-      .logo img{ width: 170px; }
-    }
+    /* formの余計な余白を消す */
+    form { margin:0; }
+    button { border:none; background:transparent; padding:0; width:100%; }
   </style>
 </head>
-
 <body>
-  <div class="page">
-
+  <div class="wrap">
     <div class="topbar">
       <div>
-        <h1 class="app-title">フラッシュ暗算アプリ</h1>
-        <div class="subtitle">級位を選択してください</div>
+        <h1 class="title">フラッシュ暗算アプリ</h1>
+        <div class="sub">級位を選択してください</div>
       </div>
-
       <div class="logo">
-        <img src="{% static 'core/images/logo.png' %}" alt="そろばん教室ロゴ">
+        <img src="{% static 'core/images/logo.png' %}" alt="ロゴ">
       </div>
     </div>
 
     <div class="grid">
       {% for lv in levels %}
-        <a class="card" href="{% url 'play' lv.name %}">
-          <h3>{{ lv.name }}</h3>
-          <div class="meta">
-            <div class="row"><span class="label">桁数：</span><span class="val">{{ lv.digits }}</span></div>
-            <div class="row"><span class="label">口数：</span><span class="val">{{ lv.terms }}</span></div>
-            <div class="row"><span class="label">秒数：</span><span class="val">{{ lv.seconds }}</span></div>
+      <form method="get" action="{% url 'play' lv.name %}">
+        <button type="submit">
+          <div class="card">
+            <div class="lv">{{ lv.name }}</div>
+            <div class="meta">
+              桁数：<b>{{ lv.digits }}</b><br>
+              口数：<b>{{ lv.terms }}</b><br>
+              秒数：<b>{{ lv.seconds }}</b>
+            </div>
           </div>
-        </a>
+        </button>
+      </form>
       {% endfor %}
     </div>
-
   </div>
 </body>
 </html>
